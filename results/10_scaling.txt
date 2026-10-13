@@ -1,0 +1,4 @@
+n      refresh_ms  sweep_ms  candidates   nj_s   qja_s  optimum_s  spr_moves
+300           0.6        22      354024   0.06    0.03        0.9        160
+1000          2.5       132     3980024   1.41    1.41        7.9        773
+1797          9.3       464    12880920   7.69    5.81       38.7       1802

@@ -1,0 +1,8 @@
+cost: node form vs brute force max rel err 4.0e-15; pair form vs brute force 3.5e-15
+SPR: 6368 regrafts checked, max |delta - recomputed|/C = 1.2e-15, candidate count = 2(n-|P|)-4 everywhere: true
+DP move: max |gain - recomputed|/C = 3.8e-16 (58/60 improved)
+additive metrics (20 trees, n = 10..67): exact recovery  NJ 20/20  QJ-sum 1/20  QJ-avg 4/20
+exact optimum, 30 instances n = 10..16: NJ+SPR hits 26, +DP(k=10) hits 30; worst NJ+SPR cost gap 3.175%
+all checks passed
+fusion small-n: ok (DP value = built tree cost, <= best input, >= exact optimum); strictly better than all inputs in 0/40
+singleton quartet support = -(m-1) Q_NJ - 2 sum d: max abs error 0.0e+0

@@ -1,0 +1,16 @@
+seed1 (180 s, 2 thr)   S = 0.84407758  cost 3730967394840.8164
+seed2 (120 s, 2 thr)   S = 0.84407740  cost 3730967514037.596
+1 thread (120 s)       S = 0.84407633  cost 3730968251776.0327
+ILS (180 s)            S = 0.84406574  cost 3730975541642.7354
+RF seed1 (180 s, 2 thr)   vs seed2 (120 s, 2 thr)   164 of 997 splits differ
+RF seed1 (180 s, 2 thr)   vs 1 thread (120 s)       49 of 997 splits differ
+RF seed1 (180 s, 2 thr)   vs ILS (180 s)            91 of 997 splits differ
+RF seed2 (120 s, 2 thr)   vs 1 thread (120 s)       201 of 997 splits differ
+RF seed2 (120 s, 2 thr)   vs ILS (180 s)            223 of 997 splits differ
+RF 1 thread (120 s)       vs ILS (180 s)            82 of 997 splits differ
+seed1 vs seed2, splits by smaller side:
+  size 2: 23/323 differ
+  size 3-5: 36/289 differ
+  size 6-20: 37/217 differ
+  size 21-100: 43/141 differ
+  size 101-500: 25/27 differ

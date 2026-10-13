@@ -1,0 +1,9 @@
+1.13 s  start (qja)                  cost 2745185359747.1675
+6.26 s  SPR descent (1342 moves)     cost 2738011204007.974
+9.40 s  DP k=12 (18/3690) + SPR (0)  cost 2738008796815.418
+38.39 s  ILS kick 40 improved      cost 2738008707905.0405
+71.86 s  ILS kick 86 improved      cost 2738004535496.311
+92.37 s  ILS kick 115 improved      cost 2737998285541.609
+93.95 s  ILS kick 116 improved      cost 2737996176278.379
+100.35 s  ILS kick 125 improved      cost 2737995840458.9116
+180.53 s  ILS: 235 kicks, 5 improved

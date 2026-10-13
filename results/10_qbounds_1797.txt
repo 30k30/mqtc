@@ -1,0 +1,1 @@
+qbounds: n = 1797, 115.9 s on 2 threads

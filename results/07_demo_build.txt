@@ -1,0 +1,7 @@
+digits_100: S = 0.85226  NJ 0.81632  nearest-leaf agreement 84.9% (pixels 91.0%)
+digits_300: S = 0.85504  NJ 0.81814  nearest-leaf agreement 85.7% (pixels 92.7%)
+digits_1000: S = 0.84408  NJ 0.78613  nearest-leaf agreement 93.9% (pixels 98.7%)
+colors_100: S = 0.93354  NJ 0.85565
+colors_300: S = 0.94087  NJ 0.86119
+colors_1000: S = 0.94692  NJ 0.63602
+demo/index.html: 241 KB

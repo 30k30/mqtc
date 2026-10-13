@@ -1,0 +1,12 @@
+# data/digits_1000  n = 1000, 8 local optima
+optimum  1 (qja   ) S = 0.8440646  9.2 s
+optimum  2 (nj    ) S = 0.8411898  10.6 s
+optimum  3 (qj    ) S = 0.8440538  20.9 s
+optimum  4 (random) S = 0.8440673  17.5 s
+optimum  5 (random) S = 0.8440617  15.7 s
+optimum  6 (random) S = 0.8440527  16.1 s
+optimum  7 (random) S = 0.8440663  15.3 s
+optimum  8 (random) S = 0.8440601  17.0 s
+fusion: 2993 clusters, 20735 candidate splits, S = 0.8440763 (DP value 0.8440763), 0.7 s
+fused + polish: S = 0.8440763  (1.5 s)
+best input S = 0.8440673;  gain from fusion+polish: 9.06e-6 in S;  total 124.5 s

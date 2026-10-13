@@ -1,0 +1,12 @@
+== euc_100
+0.03 s  start (nj)                   cost 6210324.0039045
+0.08 s  SPR descent (90 moves)       cost 6093831.9493909
+0.30 s  DP k=12 (2/235) + SPR (0)    cost 6093674.306687401
+10.02 s  ILS: 448 kicks, 2 improved
+0.54 s  ILS kick 9 improved      cost 6093658.329313701
+2.78 s  ILS kick 105 improved      cost 6093453.708860601
+== digits_100
+0.02 s  start (nj)                   cost 361367558.07659984
+0.06 s  SPR descent (25 moves)       cost 359046000.33095
+0.25 s  DP k=12 (0/200) + SPR (0)    cost 359046000.33095
+10.01 s  ILS: 405 kicks, 0 improved

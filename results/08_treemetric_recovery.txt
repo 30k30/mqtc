@@ -1,0 +1,3 @@
+n = 100: S(true tree) = 0.928536  S(NJ) = 0.928489  S(NJ+SPR+DP) = 0.930048  | RF to truth (of 97 splits): NJ 9, MQTC 10
+n = 300: S(true tree) = 0.950691  S(NJ) = 0.950694  S(NJ+SPR+DP) = 0.950710  | RF to truth (of 297 splits): NJ 27, MQTC 32
+n = 1000: S(true tree) = 0.911981  S(NJ) = 0.911982  S(NJ+SPR+DP) = 0.911986  | RF to truth (of 997 splits): NJ 81, MQTC 82

@@ -1,0 +1,6 @@
+ 148.5 s  4 starts                       S = 0.8396145  (qja~)
+ 153.5 s  gen 1: fusion of 5             S = 0.8396226  (fusion)
+ 202.6 s  gen 2: fusion of 8             S = 0.8396227  (fusion)
+ 247.3 s  gen 3: fusion of 10            S = 0.8396231  (fusion)
+ 332.6 s  gen 3: 2 new optima            S = 0.8405906  (random)
+ 332.6 s  done: 3 generations, 13 local optima, population 11 on 2 thread(s)

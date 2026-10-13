@@ -1,0 +1,16 @@
+== euc_100: previous mqtc_scale.js (8 ladder runs + fusion + polish, 2 threads)
+runs done (k = 10, 12, 14, 16): 32.3 s on 2 threads
+fusion: S = 0.8246908, after more moves S = 0.8246908  (146 rounds of up to 2 moves, 0 improving; 40.3 s total)
+S = 0.8246908
+== euc_100: new mqtc.js, NJ start, 30 s ILS
+n = 100
+cost = 6093453.708860601
+S = 0.8246908
+== digits_100: previous mqtc_scale.js (8 ladder runs + fusion + polish, 2 threads)
+runs done (k = 10, 12, 14, 16): 32.3 s on 2 threads
+fusion: S = 0.8522569, after more moves S = 0.8522569  (142 rounds of up to 2 moves, 0 improving; 40.3 s total)
+S = 0.8522569
+== digits_100: new mqtc.js, NJ start, 30 s ILS
+n = 100
+cost = 359046000.33095
+S = 0.8522569
