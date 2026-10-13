@@ -1,0 +1,346 @@
+<title>Quartet Tree Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one working screen. The tree canvas is the page; a narrow instrument panel on the right
+   carries the numbers, legend and selection. Stacks to canvas-over-panel on phones. */
+:root {
+  --bg: #e9edf1;        /* cool slate ground, biased toward the accent */
+  --surface: #f8fafb;   /* panel and leaf backing */
+  --ink: #17212c;
+  --muted: #5a6673;
+  --edge: #a9b3be;      /* tree edges */
+  --rule: #d3dae1;
+  --accent: #2346c4;    /* selection and class highlight */
+  --accent-wash: rgba(35, 70, 196, 0.10);
+  --font-ui: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1319; --surface: #161e27; --ink: #e4e9ef; --muted: #93a0ad; --edge: #4a5664; --rule: #26313d;
+    --accent: #8ea8ff; --accent-wash: rgba(142, 168, 255, 0.14); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1319; --surface: #161e27; --ink: #e4e9ef; --muted: #93a0ad; --edge: #4a5664; --rule: #26313d;
+  --accent: #8ea8ff; --accent-wash: rgba(142, 168, 255, 0.14); color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 14px; line-height: 1.45; }
+.app { height: 100%; display: grid; grid-template-rows: auto 1fr; padding-inline: 16px; box-sizing: border-box; }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; padding-block: 14px 12px; border-bottom: 1px solid var(--rule); }
+h1 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+.sub { margin: 2px 0 0; color: var(--muted); max-width: 62ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 7px; overflow: hidden; background: var(--surface); }
+.seg-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-right: 6px; align-self: center; }
+.group { display: inline-flex; align-items: center; }
+.seg button { font: 500 13px var(--font-ui); color: var(--ink); background: none; border: 0; padding: 6px 11px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.seg button:focus-visible, .chip:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+main { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; min-height: 0; padding-block: 14px 16px; }
+.stage { position: relative; min-height: 0; min-width: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+canvas.hovering { cursor: pointer; }
+.hint { position: absolute; left: 12px; bottom: 10px; font-size: 12px; color: var(--muted); pointer-events: none; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.12); display: flex; gap: 10px; align-items: center; font-size: 12px; }
+.tip canvas, .tip .sw { width: 48px; height: 48px; border-radius: 4px; image-rendering: pixelated; flex: none; }
+.tip b { font: 500 13px var(--font-data); display: block; }
+aside { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; padding-right: 2px; }
+aside h2 { margin: 0 0 8px; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.big { font: 500 34px/1 var(--font-data); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.big small { font: 400 13px var(--font-ui); color: var(--muted); letter-spacing: 0; margin-left: 6px; }
+dl.kv { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 12px; margin: 12px 0 0; }
+dl.kv dt { color: var(--muted); }
+dl.kv dd { margin: 0; text-align: right; white-space: nowrap; font: 400 13px var(--font-data); font-variant-numeric: tabular-nums; }
+.chips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.chip { font: 500 15px var(--font-data); border: 1px solid var(--rule); background: var(--surface); color: var(--ink); border-radius: 6px; padding: 5px 0; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.note { color: var(--muted); font-size: 13px; margin: 0; }
+.hist { display: grid; grid-template-columns: 14px 1fr 34px; gap: 3px 8px; align-items: center; font: 400 12px var(--font-data); font-variant-numeric: tabular-nums; }
+.hist .bar { height: 8px; background: var(--rule); border-radius: 0 3px 3px 0; position: relative; }
+.hist .bar i { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 0 3px 3px 0; }
+.hist span:nth-child(3n) { text-align: right; color: var(--muted); }
+.grid { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 10px; }
+.grid canvas { width: 22px; height: 22px; image-rendering: pixelated; background: var(--bg); border-radius: 2px; }
+.grid .sw { width: 18px; height: 18px; border-radius: 3px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.btn { font: 500 12px var(--font-ui); border: 1px solid var(--rule); background: var(--surface); color: var(--ink); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.prose p { margin: 0 0 8px; color: var(--muted); font-size: 13px; max-width: 60ch; }
+.prose b { color: var(--ink); font-weight: 500; }
+#newick { width: 100%; height: 0; opacity: 0; position: absolute; pointer-events: none; }
+@media (max-width: 760px) {
+  html, body { height: auto; }
+  .app { height: auto; }
+  main { grid-template-columns: minmax(0, 1fr); }
+  .stage { height: 72vh; }
+  aside { overflow: visible; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <header>
+    <div>
+      <h1>Quartet Tree Atlas</h1>
+      <p class="sub">Unrooted trees that minimise the Cilibrasi–Vitányi quartet cost, for handwritten digits and random colours.</p>
+    </div>
+    <div class="controls" role="toolbar" aria-label="View options">
+      <div class="group"><span class="seg-label">Data</span><div class="seg" id="ds"><button id="ds-digits" data-v="digits">Digits</button><button id="ds-colors" data-v="colors">Colours</button></div></div>
+      <div class="group"><span class="seg-label">n</span><div class="seg" id="sz"><button id="sz-100" data-v="100">100</button><button id="sz-300" data-v="300">300</button><button id="sz-1000" data-v="1000">1000</button></div></div>
+      <div class="group"><span class="seg-label">Layout</span><div class="seg" id="lay"><button id="lay-unrooted" data-v="unrooted">Unrooted</button><button id="lay-radial" data-v="radial">Radial</button><button id="lay-force" data-v="force">Force</button></div></div>
+      <div class="group"><span class="seg-label">Edges</span><div class="seg" id="len"><button id="len-fitted" data-v="fitted">Fitted</button><button id="len-equal" data-v="equal">Equal</button></div></div>
+    </div>
+  </header>
+  <main>
+    <div class="stage" id="stage">
+      <canvas id="cv" aria-label="Quartet tree. Leaves are the objects; scroll to zoom, drag to pan, click a branch point to select a clade."></canvas>
+      <div class="tip" id="tip" hidden></div>
+      <div class="hint" id="hint">Scroll to zoom · drag to pan · click a branch point to select its clade</div>
+    </div>
+    <aside>
+      <section>
+        <h2>This tree</h2>
+        <div class="big" id="sval">0.0000<small>S(T)</small></div>
+        <dl class="kv" id="kv"></dl>
+      </section>
+      <section id="legend-sec">
+        <h2 id="legend-h">Highlight a digit</h2>
+        <div class="chips" id="chips"></div>
+        <p class="note" id="legend-note" hidden>Each leaf is drawn in its own colour; distances are CIEDE2000.</p>
+      </section>
+      <section>
+        <h2>Selection</h2>
+        <div id="selbox"><p class="note">Click a branch point or a leaf. The clade is everything on the far side of that point, seen from the centre of the tree.</p></div>
+        <div class="row"><button class="btn" id="widen" disabled>Widen</button><button class="btn" id="clear" disabled>Clear</button><button class="btn" id="copy">Copy Newick</button></div>
+        <textarea id="newick" aria-hidden="true" tabindex="-1"></textarea>
+      </section>
+      <section class="prose">
+        <h2>Reading the tree</h2>
+        <p>Any four objects can be split into two pairs in three ways. A tree picks one split for every quartet, and the split costs <b>d(a,b) + d(c,d)</b>. The tree shown has the lowest total cost the solver found.</p>
+        <p><b>S(T)</b> rescales that total: 1 would put every quartet in its cheapest split, 0 every quartet in its dearest. Only branching order carries meaning. Fitted edge lengths are balanced least-squares estimates, drawn to help the eye.</p>
+        <p><b>Read small clades, not the backbone.</b> Two digit searches at n = 1000 whose S differ by 0.0000002 share 93% of their two-leaf clades but only 2 of 27 clades above 100 leaves. How the large groups join is barely constrained by the data.</p>
+        <p>Search: neighbour joining and quartet-join starts, SPR descent scored in O(1) per move, exact rearrangement of 12-subtree neighbourhoods, and fusion of local optima.</p>
+      </section>
+    </aside>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+const DATA = /*__DATA__*/null;
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const cv = $('cv'), ctx = cv.getContext('2d'), stage = $('stage'), tip = $('tip');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const state = { ds: 'digits', n: 1000, layout: 'force', lengths: 'fitted', cls: null, sel: null };
+  try { const s = JSON.parse(localStorage.getItem('qta-view') || '{}'); Object.assign(state, { ds: s.ds || state.ds, n: s.n || state.n, layout: s.layout || state.layout, lengths: s.lengths || state.lengths }); } catch (e) {}
+  const save = () => { try { localStorage.setItem('qta-view', JSON.stringify({ ds: state.ds, n: state.n, layout: state.layout, lengths: state.lengths })); } catch (e) {} };
+  let tok = {}, W = 0, H = 0, dpr = 1, zt = d3.zoomIdentity, T = null, sim = null, anim = null, hover = -1, sprites = [];
+  let X, Y, R, TH;   // current node positions (world units, roughly [-1, 1]); radial polar coordinates
+
+  const readTokens = () => { const cs = getComputedStyle(document.documentElement); for (const k of ['bg', 'surface', 'ink', 'muted', 'edge', 'rule', 'accent']) tok[k] = cs.getPropertyValue('--' + k).trim(); };
+
+  /* ---------- tree preparation: root at the centroid, children, counts ---------- */
+  function prepare(d) {
+    const n = d.n, V = 2 * n - 2, adj = Array.from({ length: V }, () => []);
+    for (let i = 0; i < d.edges.length; i += 3) { const u = d.edges[i], v = d.edges[i + 1], l = d.edges[i + 2]; adj[u].push([v, l]); adj[v].push([u, l]); }
+    // centroid: the internal node whose largest branch has the fewest leaves
+    const par = new Int32Array(V).fill(-2), ord = [0]; par[0] = -1;
+    for (let h = 0; h < ord.length; h++) for (const [w] of adj[ord[h]]) if (par[w] === -2) { par[w] = ord[h]; ord.push(w); }
+    const cnt0 = new Int32Array(V); for (let i = V - 1; i >= 0; i--) { const v = ord[i]; if (v < n) cnt0[v] = 1; if (par[v] >= 0) cnt0[par[v]] += cnt0[v]; }
+    let root = n, bestMax = Infinity;
+    for (let v = n; v < V; v++) { let mx = n - cnt0[v]; for (const [w] of adj[v]) if (w !== par[v]) mx = Math.max(mx, cnt0[w]); if (mx < bestMax) { bestMax = mx; root = v; } }
+    const parent = new Int32Array(V).fill(-2), plen = new Float64Array(V), order = [root], ch = Array.from({ length: V }, () => []); parent[root] = -1;
+    for (let h = 0; h < order.length; h++) { const v = order[h]; for (const [w, l] of adj[v]) if (parent[w] === -2) { parent[w] = v; plen[w] = l; ch[v].push(w); order.push(w); } }
+    const cnt = new Int32Array(V), height = new Int32Array(V), first = new Int32Array(V), last = new Int32Array(V);
+    for (let i = V - 1; i >= 0; i--) { const v = order[i]; if (v < n) cnt[v] = 1; else for (const w of ch[v]) { cnt[v] += cnt[w]; height[v] = Math.max(height[v], height[w] + 1); } }
+    const leafOrder = []; (function dfs(v) { first[v] = leafOrder.length; if (v < n) leafOrder.push(v); for (const w of ch[v]) dfs(w); last[v] = leafOrder.length - 1; })(root);
+    const pos = new Float64Array(n); leafOrder.forEach((v, i) => { pos[v] = i; });
+    const lens = [...plen].filter((_, v) => v !== root).sort((a, b) => a - b), med = lens[lens.length >> 1] || 1;
+    return { d, n, V, root, parent, plen, ch, order, cnt, height, first, last, leafOrder, med };
+  }
+
+  /* ---------- layouts (world units, fitted to [-1, 1]) ---------- */
+  const edgeLen = (v) => state.lengths === 'equal' ? 1 : Math.max(T.plen[v] / T.med, 0.06);
+  function normalise(x, y) { let m = 1e-9; for (let i = 0; i < x.length; i++) m = Math.max(m, Math.abs(x[i]), Math.abs(y[i])); for (let i = 0; i < x.length; i++) { x[i] /= m; y[i] /= m; } return m; }
+  function equalAngle() {   // Felsenstein: each subtree gets an angular wedge proportional to its leaf count
+    const x = new Float64Array(T.V), y = new Float64Array(T.V);
+    const go = (v, a0, a1) => { let a = a0; for (const w of T.ch[v]) { const span = (a1 - a0) * T.cnt[w] / T.cnt[v], mid = a + span / 2, L = edgeLen(w); x[w] = x[v] + L * Math.cos(mid); y[w] = y[v] + L * Math.sin(mid); go(w, a, a + span); a += span; } };
+    go(T.root, -Math.PI / 2, 1.5 * Math.PI); normalise(x, y);
+    return { x, y };
+  }
+  function radial() {   // leaves evenly on the circle in tree order; depth from equal or fitted lengths
+    const x = new Float64Array(T.V), y = new Float64Array(T.V), r = new Float64Array(T.V), th = new Float64Array(T.V), dist = new Float64Array(T.V);
+    for (const v of T.order) if (v !== T.root) dist[v] = dist[T.parent[v]] + edgeLen(v);
+    let maxd = 0; for (let v = 0; v < T.n; v++) maxd = Math.max(maxd, dist[v]);
+    for (const v of T.order) {
+      th[v] = -Math.PI / 2 + 2 * Math.PI * ((T.first[v] + T.last[v]) / 2 + 0.5) / T.n;
+      r[v] = state.lengths === 'equal' ? 1 - T.height[v] / T.height[T.root] : dist[v] / maxd;
+      x[v] = r[v] * Math.cos(th[v]); y[v] = r[v] * Math.sin(th[v]);
+    }
+    return { x, y, r, th };
+  }
+  function layout(animate) {
+    if (sim) { sim.stop(); sim = null; }
+    const target = state.layout === 'radial' ? radial() : equalAngle();
+    R = state.layout === 'radial' ? target.r : null; TH = state.layout === 'radial' ? target.th : null;
+    // force: glide to the crossing-free equal-angle drawing first, then relax it live
+    if (state.layout === 'force') return tween(target.x, target.y, animate, () => force(target, animate));
+    tween(target.x, target.y, animate);
+  }
+  function tween(tx, ty, animate, then) {
+    if (anim) cancelAnimationFrame(anim);
+    if (!animate || reduce || !X) { X = tx; Y = ty; draw(); if (then) then(); return; }
+    const fx = X.slice(), fy = Y.slice(), t0 = performance.now(), dur = then ? 450 : 700;
+    X = new Float64Array(T.V); Y = new Float64Array(T.V);
+    const step = now => { const u = Math.min(1, (now - t0) / dur), e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+      for (let i = 0; i < T.V; i++) { X[i] = fx[i] + (tx[i] - fx[i]) * e; Y[i] = fy[i] + (ty[i] - fy[i]) * e; }
+      if (u < 1) { draw(true); anim = requestAnimationFrame(step); } else { X = tx; Y = ty; anim = null; draw(); if (then) then(); } };
+    anim = requestAnimationFrame(step);
+  }
+  function force(start, animate) {   // relax the equal-angle drawing with springs on edges and repulsion between nodes
+    const S = 500, nodes = Array.from({ length: T.V }, (_, i) => ({ x: start.x[i] * S, y: start.y[i] * S }));
+    const links = []; for (let v = 0; v < T.V; v++) if (v !== T.root) links.push({ source: T.parent[v], target: v, l: edgeLen(v) });
+    const meanL = links.reduce((s, l) => s + l.l, 0) / links.length, unit = 0.55 * S / Math.sqrt(T.n) / meanL;
+    sim = d3.forceSimulation(nodes).force('link', d3.forceLink(links).distance(l => l.l * unit).strength(0.9).iterations(2))
+      .force('charge', d3.forceManyBody().strength(-6 * unit).distanceMax(12 * unit * meanL)).force('center', d3.forceCenter(0, 0)).alphaDecay(0.035).stop();
+    const copy = () => { const x = new Float64Array(T.V), y = new Float64Array(T.V); for (let i = 0; i < T.V; i++) { x[i] = nodes[i].x; y[i] = nodes[i].y; } normalise(x, y); return { x, y }; };
+    if (!animate || reduce) { sim.tick(260); const p = copy(); X = p.x; Y = p.y; sim = null; draw(); return; }
+    if (!X) { const p = copy(); X = p.x; Y = p.y; }
+    sim.on('tick', () => { const p = copy(); X = p.x; Y = p.y; draw(true); }).on('end', () => { sim = null; draw(); }).restart();
+  }
+
+  /* ---------- drawing ---------- */
+  const base = () => Math.min(W, H) / 2 * 0.9;
+  const sx = i => zt.applyX(W / 2 + X[i] * base()), sy = i => zt.applyY(H / 2 + Y[i] * base());
+  const glyph = () => { const b = T.n <= 100 ? 24 : T.n <= 300 ? 15 : 9.5; return Math.max(6, Math.min(56, b * Math.sqrt(zt.k))); };
+  function buildSprites() {
+    sprites = [];
+    if (T.d.kind !== 'digits') return;
+    const rgb = d3.color(tok.ink).rgb();
+    for (const p of T.d.pix) { const c = document.createElement('canvas'); c.width = c.height = 8; const g = c.getContext('2d'), im = g.createImageData(8, 8);
+      for (let i = 0; i < 64; i++) { im.data[4 * i] = rgb.r; im.data[4 * i + 1] = rgb.g; im.data[4 * i + 2] = rgb.b; im.data[4 * i + 3] = Math.round(255 * parseInt(p[i], 16) / 15); }
+      g.putImageData(im, 0, 0); sprites.push(c); }
+  }
+  let selMask = null;
+  function computeSelMask() { selMask = null; if (state.sel === null) return; selMask = new Uint8Array(T.V); const st = [state.sel]; while (st.length) { const v = st.pop(); selMask[v] = 1; for (const w of T.ch[v]) st.push(w); } }
+  function draw(moving) {
+    if (!T || !X) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = tok.surface; ctx.fillRect(0, 0, W, H);
+    const radialArcs = state.layout === 'radial' && !moving && !anim && R, cx = zt.applyX(W / 2), cy = zt.applyY(H / 2), rk = base() * zt.k;
+    const edges = (pred) => {
+      ctx.beginPath();
+      for (let v = 0; v < T.V; v++) { if (v === T.root || !pred(v)) continue; const p = T.parent[v];
+        if (radialArcs) { const a0 = TH[p], a1 = TH[v], rp = R[p] * rk; ctx.moveTo(cx + rp * Math.cos(a0), cy + rp * Math.sin(a0)); ctx.arc(cx, cy, rp, a0, a1, a1 < a0); ctx.lineTo(sx(v), sy(v)); }
+        else { ctx.moveTo(sx(p), sy(p)); ctx.lineTo(sx(v), sy(v)); } }
+      ctx.stroke();
+    };
+    ctx.lineWidth = 1; ctx.strokeStyle = tok.edge; ctx.globalAlpha = selMask ? 0.55 : 1; edges(() => true);
+    if (selMask) { ctx.globalAlpha = 1; ctx.strokeStyle = tok.accent; ctx.lineWidth = 1.6; edges(v => selMask[v] && v !== state.sel); }
+    ctx.globalAlpha = 1;
+    // leaves
+    const g = glyph(), digits = T.d.kind === 'digits';
+    ctx.imageSmoothingEnabled = false;
+    for (let v = 0; v < T.n; v++) {
+      const x = sx(v), y = sy(v); if (x < -g || y < -g || x > W + g || y > H + g) continue;
+      const on = (state.cls === null || T.d.label[v] === state.cls) && (!selMask || selMask[v]);
+      ctx.globalAlpha = on ? 1 : 0.16;
+      if (digits) { ctx.fillStyle = tok.surface; ctx.fillRect(x - g / 2 - 1, y - g / 2 - 1, g + 2, g + 2); ctx.drawImage(sprites[v], x - g / 2, y - g / 2, g, g);
+        if (on && state.cls !== null) { ctx.strokeStyle = tok.accent; ctx.lineWidth = 1.5; ctx.strokeRect(x - g / 2 - 1.5, y - g / 2 - 1.5, g + 3, g + 3); } }
+      else { ctx.beginPath(); ctx.arc(x, y, g * 0.42, 0, 2 * Math.PI); ctx.fillStyle = T.d.hex[v]; ctx.fill(); ctx.lineWidth = 0.8; ctx.strokeStyle = tok.surface; ctx.stroke(); }
+    }
+    ctx.globalAlpha = 1;
+    // selected and hovered branch points
+    const mark = (v, r, fill) => { ctx.beginPath(); ctx.arc(sx(v), sy(v), r, 0, 2 * Math.PI); ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = tok.surface; ctx.stroke(); };
+    if (state.sel !== null && state.sel >= T.n) mark(state.sel, 5, tok.accent);
+    if (hover >= T.n) mark(hover, 4.5, tok.ink);
+    if (hover >= 0 && hover < T.n) { const x = sx(hover), y = sy(hover); ctx.lineWidth = 2; ctx.strokeStyle = tok.ink; if (digits) ctx.strokeRect(x - g / 2 - 2, y - g / 2 - 2, g + 4, g + 4); else { ctx.beginPath(); ctx.arc(x, y, g * 0.42 + 2.5, 0, 2 * Math.PI); ctx.stroke(); } }
+    qt = null;
+  }
+
+  /* ---------- hit testing, hover, selection ---------- */
+  let qt = null;
+  function nearest(px, py) {
+    if (!qt) qt = d3.quadtree().x(i => sx(i)).y(i => sy(i)).addAll(d3.range(T.V));
+    const g = glyph(), leaf = qt.find(px, py, Math.max(g * 0.7, 6));
+    if (leaf !== undefined && leaf < T.n) return leaf;
+    let best = -1, bd = 7 * 7; qt.visit((node, x0, y0, x1, y1) => { if (!node.length) { let q = node; do { const i = q.data; if (i >= T.n) { const dx = sx(i) - px, dy = sy(i) - py, dd = dx * dx + dy * dy; if (dd < bd) { bd = dd; best = i; } } } while ((q = q.next)); } return x0 > px + 7 || x1 < px - 7 || y0 > py + 7 || y1 < py - 7; });
+    return best >= 0 ? best : (leaf !== undefined ? leaf : -1);
+  }
+  function showTip(v, px, py) {
+    if (v < 0 || v >= T.n) { tip.hidden = true; return; }
+    tip.innerHTML = '';
+    if (T.d.kind === 'digits') { const c = document.createElement('canvas'); c.width = c.height = 8; c.getContext('2d').drawImage(sprites[v], 0, 0); tip.append(c); tip.insertAdjacentHTML('beforeend', `<div><b>digit ${T.d.label[v]}</b>sample #${T.d.index[v]}</div>`); }
+    else { tip.insertAdjacentHTML('beforeend', `<span class="sw" style="background:${T.d.hex[v]}"></span><div><b>${T.d.hex[v]}</b>sRGB</div>`); }
+    tip.hidden = false; const r = tip.getBoundingClientRect(), x = Math.min(px + 14, W - r.width - 8), y = Math.min(py + 14, H - r.height - 8);
+    tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+  }
+  function select(v) {
+    state.sel = v; computeSelMask(); $('widen').disabled = v === null || v === T.root; $('clear').disabled = v === null;
+    const box = $('selbox');
+    if (v === null) { box.innerHTML = '<p class="note">Click a branch point or a leaf. The clade is everything on the far side of that point, seen from the centre of the tree.</p>'; draw(); return; }
+    const leaves = T.leafOrder.slice(T.first[v], T.last[v] + 1);
+    let html = `<div class="big" style="font-size:24px">${leaves.length}<small>${leaves.length === 1 ? 'leaf' : 'leaves'} in clade</small></div>`;
+    if (T.d.kind === 'digits') {
+      const c = new Array(10).fill(0); leaves.forEach(l => c[T.d.label[l]]++); const mx = Math.max(...c);
+      html += '<div class="hist" style="margin-top:10px">' + c.map((k, i) => `<span>${i}</span><span class="bar"><i style="width:${(100 * k / mx).toFixed(1)}%"></i></span><span>${k}</span>`).join('') + '</div>';
+    }
+    html += '<div class="grid" id="sgrid"></div>'; box.innerHTML = html;
+    const grid = $('sgrid'), show = leaves.slice(0, 160);
+    for (const l of show) { if (T.d.kind === 'digits') { const c = document.createElement('canvas'); c.width = c.height = 8; c.getContext('2d').drawImage(sprites[l], 0, 0); c.title = 'digit ' + T.d.label[l]; grid.append(c); } else { const s = document.createElement('span'); s.className = 'sw'; s.style.background = T.d.hex[l]; s.title = T.d.hex[l]; grid.append(s); } }
+    if (leaves.length > show.length) grid.insertAdjacentHTML('beforeend', `<span class="note" style="align-self:center">+${leaves.length - show.length} more</span>`);
+    draw();
+  }
+
+  /* ---------- panel ---------- */
+  const fmtInt = x => x.toLocaleString('en-US');
+  function panel() {
+    const d = T.d; $('sval').innerHTML = `${d.S.toFixed(4)}<small>S(T)</small>`;
+    const rows = [['objects', fmtInt(d.n)], ['quartets', d.quartets], ['NJ tree, for comparison', d.Snj.toFixed(4)], ['search', `${d.seconds.toFixed(0)} s, ${d.threads} thread${d.threads > 1 ? 's' : ''}`], ['local optima tried', fmtInt(d.optima)], ['distance', d.metric]];
+    if (d.kind === 'digits') rows.push(['nearest leaf, same digit', `${(100 * d.nnTree).toFixed(1)}%`], ['nearest by pixels, same digit', `${(100 * d.nnMetric).toFixed(1)}%`]);
+    $('kv').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+    const dg = d.kind === 'digits'; $('chips').hidden = !dg; $('legend-note').hidden = dg; $('legend-h').textContent = dg ? 'Highlight a digit' : 'Leaves';
+    $('newick').value = d.newick;
+  }
+  function chips() {
+    $('chips').innerHTML = d3.range(10).map(i => `<button class="chip" id="chip-${i}" data-v="${i}" aria-pressed="${state.cls === i}">${i}</button>`).join('');
+    $('chips').querySelectorAll('button').forEach(b => b.onclick = () => { const v = +b.dataset.v; state.cls = state.cls === v ? null : v; chips(); draw(); });
+  }
+  function pressed() { for (const [id, key] of [['ds', 'ds'], ['sz', 'n'], ['lay', 'layout'], ['len', 'lengths']]) $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === String(state[key])))); }
+
+  /* ---------- wiring ---------- */
+  function load(animate) {
+    const d = DATA.find(x => x.kind === state.ds && x.n === state.n) || DATA[0]; state.ds = d.kind; state.n = d.n;
+    T = prepare(d); X = null; state.sel = null; selMask = null; hover = -1; tip.hidden = true; if (d.kind !== 'digits') state.cls = null;
+    buildSprites(); panel(); chips(); select(null); pressed(); zt = d3.zoomIdentity; d3.select(cv).call(zoom.transform, zt); layout(state.layout === 'force'); save();
+  }
+  function resize() { const r = stage.getBoundingClientRect(); W = r.width; H = r.height; dpr = window.devicePixelRatio || 1; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); draw(); }
+  const zoom = d3.zoom().scaleExtent([0.5, 40]).on('zoom', e => { zt = e.transform; draw(); });
+  d3.select(cv).call(zoom).on('dblclick.zoom', null);
+  cv.addEventListener('pointermove', e => { const r = cv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top, v = nearest(px, py);
+    if (v !== hover) { hover = v; cv.classList.toggle('hovering', v >= 0); draw(); } showTip(v, px, py); });
+  cv.addEventListener('pointerleave', () => { hover = -1; tip.hidden = true; draw(); });
+  let down = null; cv.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+  cv.addEventListener('click', e => { if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4) return; const r = cv.getBoundingClientRect(), v = nearest(e.clientX - r.left, e.clientY - r.top);
+    if (v < 0) select(null); else select(v < T.n ? T.parent[v] : v); });
+  $('widen').onclick = () => { if (state.sel !== null && T.parent[state.sel] >= 0) select(T.parent[state.sel]); };
+  $('clear').onclick = () => select(null);
+  $('copy').onclick = () => { const t = $('newick').value, b = $('copy'); const done = m => { b.textContent = m; setTimeout(() => { b.textContent = 'Copy Newick'; }, 1600); };
+    navigator.clipboard.writeText(t).then(() => done('Copied'), () => { const a = $('newick'); a.style.height = '60px'; a.style.opacity = 1; a.style.position = 'static'; a.style.pointerEvents = 'auto'; a.select(); done('Select and copy'); }); };
+  for (const [id, key, num] of [['ds', 'ds'], ['sz', 'n', 1], ['lay', 'layout'], ['len', 'lengths']])
+    $(id).querySelectorAll('button').forEach(b => b.onclick = () => { const v = num ? +b.dataset.v : b.dataset.v; if (state[key] === v) return; state[key] = v; pressed(); if (key === 'ds' || key === 'n') load(); else { save(); layout(true); } });
+  const retheme = () => { readTokens(); if (T) { buildSprites(); if (state.sel !== null) select(state.sel); draw(); } };
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  new ResizeObserver(resize).observe(stage);
+  readTokens(); resize(); load();
+})();
+</script>
